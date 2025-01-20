@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express()
 
+let date_time = new Date()
+
 let persons = [
     { 
       "id": "1",
@@ -32,7 +34,9 @@ app.get('/api/persons', (request, response) => {
     response.json(persons)
 })
 
-
+app.get('/info', (request, response) => {
+    response.send(`<p>Phonebook has info for ${persons.length} people</p> <p>${date_time}</p>`)
+})
 
 const PORT = 3001
 app.listen(PORT, () => {
