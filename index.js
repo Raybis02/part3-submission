@@ -1,15 +1,29 @@
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
+const cors = require('cors')
 
-morgan.token('json', (request) => {
+
+
+morgan.token('json', (request, response) => {
     if (request.method === 'POST') {
-        const json = JSON.stringify(request.body)
-        return json
+        return JSON.stringify(request.body)
+    } else if (request.method === 'DELETE') {
+        return response.body ? response.body : ''
     }
     return ''
 })
 
+app.use((req, res, next) => {
+    const oldSend = res.send
+    res.send = data => {
+        res.body = data
+        oldSend.call(res, data)
+    }
+    next()
+})
+
+app.use(cors())
 app.use(express.json())
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :json'))
 
@@ -70,10 +84,16 @@ app.get(`/api/persons/:id`, (request, response) => {
 
 app.delete('/api/persons/:id', (request, response) => {
     const id = request.params.id
-    persons = persons.filter(person => person.id !== id)
+    const deleted = persons.find(person => person.id === id)
 
-    response.status(204).end()
+    if (deleted) {
+        persons = persons.filter(person => person.id !== id)
+        response.status(204).json(deleted)
+    } else {
+        response.status(404).send({ error: 'Person not found' })
+    }
 })
+
 
 app.post('/api/persons', (request, response) => {
     const body = request.body
@@ -93,7 +113,7 @@ app.post('/api/persons', (request, response) => {
     }
 
     const person = {
-        id: generateId(),
+        id: generateId().toString(),
         name: body.name,
         number: body.number
     }
