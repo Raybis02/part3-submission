@@ -4,8 +4,22 @@ const express = require('express')
 const app = express()
 const morgan = require('morgan')
 const cors = require('cors')
-const Persons = require('./models/Person')
 const Person = require('./models/Person')
+
+
+const unknownEndpoint = (request, response) => {
+    response.status(404).send('<h1>Error 404 Page Not Found</h1> <p>This endpoint does not exist</p>')
+}
+
+const errorHandler = (error, request, response, next) => {
+    console.log(error.message)
+
+    if(error.name === 'CastError'){
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
 
 morgan.token('json', (request, response) => {
     if (request.method === 'POST') {
@@ -33,12 +47,6 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :j
 
 let date_time = new Date()
 
-
-const generateId = () => {
-    const id = Math.floor(Math.random() * 10000)
-    return id
-}
-
 app.get('/favicon.ico', (req, res) => res.status(204).end())
 
 // app.get('/', (request, response) => {
@@ -46,41 +54,46 @@ app.get('/favicon.ico', (req, res) => res.status(204).end())
 // })
 
 app.get('/api/Persons', (request, response) => {
-    Persons.find({}).then(person => {
-        if (person) {
-            response.json(person)
-        } else {
-            response.send('<h1>Error 404 Page Not Found</h1><p>Database does not exist</p>')
-            response.status(404).end()
-        }
-    })
+    Person.find({})
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.send('<h1>Error 404 Page Not Found</h1><p>Database does not exist</p>')
+                response.status(404).end()
+            }
+        })
 })
 
 app.get('/info', (request, response) => {
-    response.send(`<p>Phonebook has info for ${Persons.length} people</p> <p>${date_time}</p>`)
+    response.send(`<p>Phonebook has info for ${Person.length} people</p> <p>${date_time}</p>`)
 })
 
-app.get(`/api/Persons/:id`, (request, response) => {
+app.get(`/api/Persons/:id`, (request, response, next) => {
     const id = request.params.id
-    const person = Persons.find(person => person.id === id)
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(404).send(`<h2>404 Page Not Found</h2> <p>there is no entry for a person with id ${id}</p>`).end()
-    }
+    Person.findById(id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).send(`<h2>404 Page Not Found</h2> <p>there is no entry for a person with id ${id}</p>`).end()
+            }
+        })
+        .catch(error => next(error))
+    
 })
 
-app.delete('/api/Persons/:id', (request, response) => {
+app.delete('/api/Persons/:id', (request, response, next) => {
     const id = request.params.id
-    const deleted = Persons.find(person => person.id === id)
-
-    if (deleted) {
-        Persons = Persons.filter(person => person.id !== id)
-        response.status(204).json(deleted)
-    } else {
-        response.status(404).send({ error: 'Person not found' })
-    }
-})
+    Person.findByIdAndDelete(id)
+      .then(result => {
+        if (!result) {
+          return response.status(404).json({ error: 'Entry not found' })
+        }
+        response.status(204).end()
+      })
+      .catch(error => next(error))
+  })
 
 
 app.post('/api/Persons', (request, response) => {
@@ -121,6 +134,29 @@ app.post('/api/Persons', (request, response) => {
             })
         })
 })
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const id = request.params.id
+    const body = request.body
+
+    if((body.number || body.name) === null){
+        response.status(400).json({ error: 'both fields need value' })
+    }
+
+    const person = {
+        name: body.name,
+        number: body.number
+    }
+
+    Person.findByIdAndUpdate(id, person, { new: true })
+        .then(updatedPerson => {
+            response.json(updatedPerson)
+        })
+        .catch(error => next(error))
+})
+
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
