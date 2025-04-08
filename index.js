@@ -49,9 +49,9 @@ let date_time = new Date()
 
 app.get('/favicon.ico', (req, res) => res.status(204).end())
 
-// app.get('/', (request, response) => {
-//     response.send('<h1>Welcome to Phonebook</h1>')
-// })
+app.get('/', (request, response) => {
+    response.send('<h1>Welcome to Phonebook</h1>')
+})
 
 app.get('/api/Persons', (request, response) => {
     Person.find({})
@@ -66,7 +66,13 @@ app.get('/api/Persons', (request, response) => {
 })
 
 app.get('/info', (request, response) => {
-    response.send(`<p>Phonebook has info for ${Person.length} people</p> <p>${date_time}</p>`)
+    Person.countDocuments({})
+        .then(count => {
+            response.send(`<p>Phonebook has info for ${count} people</p> <p>${date_time}</p>`)
+        })
+        .catch(error => {
+            response.status(500).send({ error: 'Failed to retrieve person count' })
+        })
 })
 
 app.get(`/api/Persons/:id`, (request, response, next) => {
