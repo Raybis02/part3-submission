@@ -17,6 +17,9 @@ const errorHandler = (error, request, response, next) => {
     if(error.name === 'CastError'){
         return response.status(400).send({ error: 'malformatted id' })
     }
+    else if (error.name === 'ValidationError') {
+        return response.status(400).json({error: error.message})
+    }
 
     next(error)
 }
@@ -102,7 +105,7 @@ app.delete('/api/Persons/:id', (request, response, next) => {
   })
 
 
-app.post('/api/Persons', (request, response) => {
+app.post('/api/Persons', (request, response, next) => {
     const body = request.body
 
     if (!body.name) {
@@ -133,19 +136,20 @@ app.post('/api/Persons', (request, response) => {
         .then(savedPerson => {
             response.json(savedPerson)
         })
-        .catch(error => {
-            console.log(error.message)
-            response.status(400).json({
-                error: 'Failed to save person'
-            })
-        })
+        .catch(error => next(error))
+        //     {
+        //     console.log(error.message)
+        //     response.status(400).json({
+        //         error: 'Failed to save person'
+        //     })
+        // })
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
     const id = request.params.id
     const body = request.body
 
-    if((body.number || body.name) === null){
+    if(body.number === ''){
         response.status(400).json({ error: 'both fields need value' })
     }
 
@@ -154,8 +158,11 @@ app.put('/api/persons/:id', (request, response, next) => {
         number: body.number
     }
 
-    Person.findByIdAndUpdate(id, person, { new: true })
+    Person.findByIdAndUpdate(id, person, { new: true, runValidators: true })
         .then(updatedPerson => {
+            if (!updatedPerson) {
+                return response.status(404).json({ error: 'Entry not found'})
+            }
             response.json(updatedPerson)
         })
         .catch(error => next(error))

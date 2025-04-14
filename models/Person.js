@@ -16,8 +16,22 @@ mongoose.connect(url)
 
 const personSchema = new mongoose.Schema({
     id: String,
-    name: String,
-    number: String,
+    name:{
+        type: String,
+        minLength: [3, 'Name must be at least 3 characters long'],
+        required: true
+    },
+    number:{
+        type: String,
+        validate:{
+            validator: function(v) {
+                    const minlength = 9
+                	return v.length >= minlength && /\d{2}-\d{5}/.test(v) 
+            },
+            message: props => `${props.value} is invalid. Numbers contain at least 8 digits split by a \'-\' after the first 2 or 3 digits`
+        },
+        required: true,
+    } 
 })
 
 personSchema.set('toJSON', {
