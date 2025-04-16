@@ -7,9 +7,8 @@
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:ui": "@powershell Remove-Item -Recurse -Force dist && cd ../frontend && npm run build && @powershell Copy-Item dist -Recurse ../backend",
-    "deploy": "fly deploy",
     "deploy:full": "npm run build:ui && npm run deploy",
-    "logs:prod": "fly logs"
+    "lint": "eslint ."
   },
   "author": "Rabis Chawarri",
   "license": "ISC",
@@ -22,7 +21,12 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.24.0",
     "@flydotio/dockerfile": "^0.7.2",
+    "@stylistic/eslint-plugin-js": "^4.2.0",
+    "eslint": "^9.24.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.0.0",
     "nodemon": "^3.1.9"
   }
 }
