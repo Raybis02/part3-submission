@@ -26,9 +26,9 @@ const personSchema = new mongoose.Schema({
         validate:{
             validator: function(v) {
                     const minlength = 9
-                	return v.length >= minlength && /\d{2}-\d{5}/.test(v) 
+                	return v.length >= minlength && /^\d{2,3}-\d{5,}$/.test(v) 
             },
-            message: props => `${props.value} is invalid. Numbers contain at least 8 digits split by a \'-\' after the first 2 or 3 digits`
+            message: props => `Number '${props.value}' is invalid. Numbers contain at least 8 digits split by a \'-\' after the first 2 or 3 digits`
         },
         required: true,
     } 
